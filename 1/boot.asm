@@ -8,7 +8,32 @@ start:
     mov ss,ax
     mov sp,0x7c00
 
-PrintMessage:
+TestDiskExtension:
+    mov [DriveId],dl
+    mov ah,0x41
+    mov bx,0x55aa
+    int 0x13
+    jc NotSupport
+    cmp bx,0xaa55
+    jne NotSupport
+    
+LoadLoader:
+    mov si,ReadPacket
+    mov word[si],0x10
+    mov word[si+2],5
+    mov word[si+4], 0x7e00
+    mov word[si+6],0
+    mov dword[si+8],1
+    mov dword[si+0xc],0
+    mov dl,[DriveId]
+    mov ah,0x42
+    int 0x13
+    jc ReadError
+    mov dl,[DriveId]
+    jmp 0x7e00
+
+ReadError:
+NotSupport:
     mov ah,0x13
     mov al,1
     mov bx,0xa
@@ -20,9 +45,11 @@ PrintMessage:
 End:
     hlt    
     jmp End
-     
-Message:    db "Hello this is benOS"
+
+DriveId:    db 0
+Message:    db "Error loading file"
 MessageLen: equ $-Message
+ReadPacket: times 16 db 0
 
 times (0x1be-($-$$)) db 0
 
